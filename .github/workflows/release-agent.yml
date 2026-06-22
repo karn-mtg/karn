@@ -1,0 +1,27 @@
+name: Release Agent
+
+on:
+  push:
+    tags: ['agent-v*']
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Package agent
+        shell: bash
+        run: |
+          version="${GITHUB_REF_NAME#agent-v}"
+          asset="karn-agent-v${version}.tar.gz"
+          tar -czf "${asset}" agent/
+          echo "ASSET_NAME=${asset}" >> "$GITHUB_ENV"
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ env.ASSET_NAME }}
+          generate_release_notes: true

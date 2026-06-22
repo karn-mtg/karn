@@ -1,0 +1,92 @@
+[
+  {
+    "cards": ["Blood Artist", "Reassembling Skeleton", "Phyrexian Altar"],
+    "type": "infinite",
+    "description": "Sac Reassembling Skeleton to Phyrexian Altar for B, it returns for B, repeat. Blood Artist drains each loop."
+  },
+  {
+    "cards": ["Mikaeus, the Unhallowed", "Triskelion"],
+    "type": "infinite",
+    "description": "Triskelion deals 1 to itself (dies, Undying returns it with +1/+1). Remove the counter to reset. Loop for infinite damage."
+  },
+  {
+    "cards": ["Kitchen Finks", "Phyrexian Altar", "Blood Artist"],
+    "type": "infinite",
+    "description": "Finks dies, Persist returns it. Sac to Altar for mana. Blood Artist drains each loop."
+  },
+  {
+    "cards": ["Felidar Guardian", "Saheeli Rai"],
+    "type": "infinite",
+    "description": "Saheeli -2 copies Felidar Guardian. The copy blinks Saheeli. Repeat for infinite hasty tokens."
+  },
+  {
+    "cards": ["Deadeye Navigator", "Palinchron"],
+    "type": "infinite",
+    "description": "Palinchron untaps 7 lands when it ETBs. Soulbond with Deadeye to blink it repeatedly for infinite mana."
+  },
+  {
+    "cards": ["Basalt Monolith", "Rings of Brighthearth"],
+    "type": "infinite",
+    "description": "Tap Monolith for 3 colorless, activate untap (2 colorless), copy with Rings paying 2, untap for free. Net +1 mana per loop."
+  },
+  {
+    "cards": ["Dramatic Reversal", "Isochron Scepter"],
+    "type": "infinite",
+    "description": "Imprint Dramatic Reversal on Scepter. With 3+ mana from rocks, untap all nonlands (including the rocks) each activation."
+  },
+  {
+    "cards": ["Splinter Twin", "Deceiver Exarch"],
+    "type": "infinite",
+    "description": "Enchant Exarch with Twin. Tap to copy it. The copy untaps Exarch. Repeat for infinite hasty tokens."
+  },
+  {
+    "cards": ["Splinter Twin", "Pestermite"],
+    "type": "infinite",
+    "description": "Enchant Pestermite with Twin. Tap to copy it. The copy untaps Pestermite. Repeat for infinite hasty tokens."
+  },
+  {
+    "cards": ["Meren of Clan Nel Toth", "Spore Frog"],
+    "type": "soft",
+    "description": "Sac Spore Frog each turn to counter all combat damage. Meren returns it at end step."
+  },
+  {
+    "cards": ["Sun Titan", "Animate Dead"],
+    "type": "infinite",
+    "description": "Animate Dead returns Sun Titan. Titan's ETB returns Animate Dead. Attach to another creature. Loop with a sac outlet."
+  },
+  {
+    "cards": ["Melira, Sylvok Outcast", "Kitchen Finks", "Viscera Seer"],
+    "type": "infinite",
+    "description": "Finks enters with no -1/-1 counters (Melira prevents it). Sac to Viscera Seer, Persist returns it. Scry and drain each loop."
+  },
+  {
+    "cards": ["Heliod, Sun-Crowned", "Walking Ballista"],
+    "type": "infinite",
+    "description": "Give Ballista lifelink via Heliod. Each damage trigger gains life, Heliod puts a counter on Ballista. Infinite damage and life."
+  },
+  {
+    "cards": ["Thassa's Oracle", "Demonic Consultation"],
+    "type": "instant_win",
+    "description": "Cast Consultation naming a card not in deck, exile entire library. Thassa's Oracle ETB wins with empty library."
+  },
+  {
+    "cards": ["Thassa's Oracle", "Tainted Pact"],
+    "type": "instant_win",
+    "description": "With no duplicate basics, Tainted Pact can exile the entire library. Thassa's Oracle wins."
+  },
+  {
+    "cards": ["Kiki-Jiki, Mirror Breaker", "Restoration Angel"],
+    "type": "infinite",
+    "description": "Copy Restoration Angel with Kiki. The copy blinks Kiki. Repeat for infinite hasty tokens."
+  },
+  {
+    "cards": ["Panharmonicon", "Eternal Witness", "Conjurer's Closet"],
+    "type": "value",
+    "description": "Closet blinks Witness at EOT, Panharmonicon doubles the ETB, getting two cards from graveyard per turn."
+  },
+  {
+    "cards": ["Cathars' Crusade", "Purphoros, God of the Forge", "Hordeling Outburst"],
+    "type": "value",
+    "description": "Tokens entering trigger Purphoros damage and Cathars' Crusade counters. Scales with any token producer."
+  }
+]

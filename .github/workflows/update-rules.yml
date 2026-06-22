@@ -1,0 +1,78 @@
+name: Update Rules Data
+
+on:
+  schedule:
+    - cron: "0 6 1 * *"   # monthly, 1st of each month at 06:00 UTC
+  workflow_dispatch:        # allow manual trigger
+
+jobs:
+  update:
+    name: Rebuild rules artifacts
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0   # needed for tagging
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -e .
+
+      - name: Build rules (no wiki)
+        run: python scripts/build_rules.py --force-download --force-reindex --no-wiki
+
+      - name: Build wiki enrichment
+        run: python scripts/build_rules.py --force-wiki
+
+      - name: Check for changes
+        id: diff
+        run: |
+          git diff --quiet && echo "changed=false" >> "$GITHUB_OUTPUT" \
+            || echo "changed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Compute next rules-db version
+        id: version
+        if: steps.diff.outputs.changed == 'true'
+        run: |
+          # Find the latest rules-db-v* tag and bump the patch version
+          latest=$(git tag -l 'rules-db-v*' | sort -V | tail -1)
+          if [ -z "$latest" ]; then
+            next="rules-db-v1.0.0"
+          else
+            base="${latest#rules-db-v}"
+            major=$(echo "$base" | cut -d. -f1)
+            minor=$(echo "$base" | cut -d. -f2)
+            patch=$(echo "$base" | cut -d. -f3)
+            next="rules-db-v${major}.${minor}.$((patch + 1))"
+          fi
+          echo "tag=${next}" >> "$GITHUB_OUTPUT"
+          echo "Next rules-db tag: ${next}"
+
+      - name: Commit updated artifacts
+        if: steps.diff.outputs.changed == 'true'
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add \
+            arsenal/rules/data/rules.json \
+            arsenal/rules/data/glossary.json \
+            arsenal/rules/data/keyword_index.json \
+            "arsenal/rules/chunks/"
+          git commit -m "chore: update rules data [skip ci]"
+          git push
+
+      - name: Tag new rules-db release
+        if: steps.diff.outputs.changed == 'true'
+        env:
+          NEW_TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          git tag "$NEW_TAG"
+          git push origin "$NEW_TAG"

@@ -1,0 +1,47 @@
+name: Release Cards DB
+
+on:
+  push:
+    tags: ['cards-db-v*']
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -e .
+
+      - name: Build card database
+        env:
+          KARN_DATA_DIR: ${{ github.workspace }}/db
+        run: python scripts/build_db.py
+        timeout-minutes: 60
+
+      - name: Package cards DB
+        shell: bash
+        run: |
+          version="${GITHUB_REF_NAME#cards-db-v}"
+          asset="karn-cards-db-v${version}.tar.gz"
+          echo "Packaging ${asset}..."
+          tar -czf "${asset}" \
+            -C "${{ github.workspace }}/db" \
+            chroma_db graph.json prints.db
+          echo "ASSET_NAME=${asset}" >> "$GITHUB_ENV"
+          echo "SIZE=$(du -sh ${asset} | cut -f1)" >> "$GITHUB_ENV"
+
+      - name: Log size
+        run: echo "Package size: ${{ env.SIZE }}"
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ env.ASSET_NAME }}
+          generate_release_notes: false

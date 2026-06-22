@@ -1,0 +1,36 @@
+name: Release Rules DB
+
+on:
+  push:
+    tags: ['rules-db-v*']
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Assemble staging directory
+        shell: bash
+        run: |
+          mkdir -p /tmp/rules-staging
+          cp arsenal/rules/data/rules.json /tmp/rules-staging/
+          cp arsenal/rules/data/glossary.json /tmp/rules-staging/
+          cp arsenal/rules/data/keyword_index.json /tmp/rules-staging/
+          cp -r arsenal/rules/chunks /tmp/rules-staging/
+
+      - name: Package rules DB
+        shell: bash
+        run: |
+          version="${GITHUB_REF_NAME#rules-db-v}"
+          asset="karn-rules-db-v${version}.tar.gz"
+          tar -czf "${asset}" -C /tmp/rules-staging .
+          echo "ASSET_NAME=${asset}" >> "$GITHUB_ENV"
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ env.ASSET_NAME }}
+          generate_release_notes: false

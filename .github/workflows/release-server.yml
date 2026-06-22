@@ -1,0 +1,60 @@
+name: Release Server
+
+on:
+  push:
+    tags: ['server-v*']
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            platform: win
+            ext: .exe
+          - os: macos-latest
+            platform: mac
+            ext: ""
+          - os: ubuntu-latest
+            platform: linux
+            ext: ""
+
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -e .
+
+      - name: Stamp version
+        shell: bash
+        run: echo "${GITHUB_REF_NAME#server-v}" > version.txt
+
+      - name: Build executables
+        run: python scripts/build_executables.py
+
+      - name: Package release (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          $version = "${{ github.ref_name }}" -replace '^server-v', ''
+          Compress-Archive dist\karn.exe "karn-arsenal-v${version}-windows.zip"
+
+      - name: Package release (Linux/Mac)
+        if: matrix.os != 'windows-latest'
+        shell: bash
+        run: |
+          version="${GITHUB_REF_NAME#server-v}"
+          zip "karn-arsenal-v${version}-${{ matrix.platform }}.zip" dist/karn
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: karn-arsenal-v*.zip
+          generate_release_notes: true

@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install ruff
+        run: pip install ruff
+
+      - name: Run ruff
+        run: ruff check .
+
+  syntax:
+    name: Syntax check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -e ".[dev]"
+
+      - name: Compile all Python files
+        run: |
+          find . -name "*.py" \
+            -not -path "./.venv/*" \
+            -not -path "./venv/*" \
+            -not -path "./.git/*" \
+            | xargs -I{} python -m py_compile {}
+
+      - name: Import test — arsenal.rules.parser
+        run: python -c "from arsenal.rules.parser import parse_rules"
+
+      - name: Import test — arsenal.cards.config
+        run: python -c "from arsenal.cards.config import MECHANIC_CLUSTERS"
+
+      - name: Import test — arsenal.server
+        run: python -c "from arsenal.server import mcp"
+
+      - name: Run tests
+        run: python -m pytest tests/smoke/ tests/unit/ -v
