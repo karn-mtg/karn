@@ -1,6 +1,10 @@
 # arsenal/rules/vectordb.py
 from __future__ import annotations
 
+import hashlib
+import json
+from pathlib import Path
+
 import chromadb
 from sentence_transformers import SentenceTransformer
 
@@ -11,6 +15,24 @@ _GLOSSARY_COLLECTION = "mtg_glossary"
 _BATCH_SIZE = 500
 
 
+def _content_hash(data: dict) -> str:
+    """Stable MD5 of sorted key→value pairs, tolerant of dict ordering."""
+    serialised = json.dumps(
+        {k: (v if isinstance(v, str) else v.get("text", "")) for k, v in sorted(data.items())},
+        sort_keys=True,
+    )
+    return hashlib.md5(serialised.encode()).hexdigest()
+
+
+def _read_hash(db_path: str, name: str) -> str | None:
+    p = Path(db_path) / f"{name}.hash"
+    return p.read_text().strip() if p.exists() else None
+
+
+def _write_hash(db_path: str, name: str, h: str) -> None:
+    (Path(db_path) / f"{name}.hash").write_text(h)
+
+
 def build_rules_vectordb(
     rules: dict,
     glossary: dict,
@@ -19,21 +41,23 @@ def build_rules_vectordb(
 ) -> None:
     """Embed all parsed rules and glossary terms into ChromaDB collections."""
     client = chromadb.PersistentClient(path=db_path)
-    _build_rules_collection(client, rules, force)
-    _build_glossary_collection(client, glossary, force)
+    _build_rules_collection(client, rules, force, db_path)
+    _build_glossary_collection(client, glossary, force, db_path)
 
 
 def _build_rules_collection(
     client: chromadb.ClientAPI,
     rules: dict,
     force: bool,
+    db_path: str,
 ) -> None:
     col = client.get_or_create_collection(
         _RULES_COLLECTION,
         metadata={"hnsw:space": "cosine"},
     )
 
-    if not force and col.count() == len(rules):
+    computed_hash = _content_hash(rules)
+    if not force and col.count() == len(rules) and _read_hash(db_path, "rules") == computed_hash:
         print(f"  Rules vector DB already current ({col.count()} rules). Use --force-reembed to rebuild.")
         return
 
@@ -53,6 +77,7 @@ def _build_rules_collection(
 
     print(f"  Embedding {len(ids)} rules...")
     _upsert_in_batches(col, model, ids, texts, metadatas)
+    _write_hash(db_path, "rules", computed_hash)
     print(f"  Rules vector DB: {col.count()} rules embedded.")
 
 
@@ -60,13 +85,15 @@ def _build_glossary_collection(
     client: chromadb.ClientAPI,
     glossary: dict,
     force: bool,
+    db_path: str,
 ) -> None:
     col = client.get_or_create_collection(
         _GLOSSARY_COLLECTION,
         metadata={"hnsw:space": "cosine"},
     )
 
-    if not force and col.count() == len(glossary):
+    computed_hash = _content_hash(glossary)
+    if not force and col.count() == len(glossary) and _read_hash(db_path, "glossary") == computed_hash:
         print(f"  Glossary vector DB already current ({col.count()} terms).")
         return
 
@@ -77,6 +104,7 @@ def _build_glossary_collection(
 
     print(f"  Embedding {len(ids)} glossary terms...")
     _upsert_in_batches(col, model, ids, texts, metadatas)
+    _write_hash(db_path, "glossary", computed_hash)
     print(f"  Glossary vector DB: {col.count()} terms embedded.")
 
 

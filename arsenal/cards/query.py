@@ -100,7 +100,7 @@ class CardDB:
         chroma_dir = Path(chroma_dir) if chroma_dir else CHROMA_DIR
         graph_path = Path(graph_path) if graph_path else GRAPH_JSON_PATH
 
-        self._model = SentenceTransformer(SENTENCE_TRANSFORMER_MODEL, local_files_only=True)
+        self._model = SentenceTransformer(SENTENCE_TRANSFORMER_MODEL)
         self._collection: chromadb.Collection = get_collection_for_query(chroma_dir)
         self._graph: nx.DiGraph = load_graph(graph_path)
         self._count: int = self._collection.count()

@@ -112,15 +112,17 @@ def build_embeddings(
         print(f"  Resuming from chunk {last_done + 1}/{total_chunks}")
 
     print(f"  Loading sentence-transformer model ({SENTENCE_TRANSFORMER_MODEL})...")
-    model = SentenceTransformer(SENTENCE_TRANSFORMER_MODEL)
+    model = SentenceTransformer(SENTENCE_TRANSFORMER_MODEL, device="cpu")
 
     all_embeddings: list[np.ndarray] = []
     start = time.time()
 
     for chunk_idx, chunk in enumerate(chunks):
         if chunk_idx <= last_done:
-            # Load from saved file for skipped chunks so all_embeddings stays complete
-            # (only matters when resuming a partially completed build)
+            # Already encoded — fetch back from ChromaDB so all_embeddings stays complete
+            ids = [c["id"] for c in chunk]
+            fetched = collection.get(ids=ids, include=["embeddings"])
+            all_embeddings.append(np.array(fetched["embeddings"], dtype=np.float32))
             continue
 
         chunk_start = chunk_idx * CHROMA_UPSERT_CHUNK
