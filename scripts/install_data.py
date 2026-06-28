@@ -30,6 +30,9 @@ GITHUB_REPO = os.environ.get("KARN_GITHUB_REPO", "karn-mtg/karn")
 DB_DIR = Path(
     os.environ.get("KARN_DATA_DIR") or Path.home() / "karnData" / "arsenal" / "db"
 ).expanduser()
+AGENT_DIR = Path(
+    os.environ.get("KARN_AGENT_DIR") or Path.home() / "karnData" / "arsenal" / "agent"
+).expanduser()
 
 GITHUB_API = "https://api.github.com"
 
@@ -39,18 +42,21 @@ _COMPONENT_CONFIG: dict[str, dict] = {
         "asset_template": "karn-cards-db-v{version}.tar.gz",
         "version_file": "cards-db-version.txt",
         "label": "Cards DB",
+        "install_dir": DB_DIR,
     },
     "rules": {
         "tag_prefix": "rules-db-v",
         "asset_template": "karn-rules-db-v{version}.tar.gz",
         "version_file": "rules-db-version.txt",
         "label": "Rules DB",
+        "install_dir": DB_DIR,
     },
     "agent": {
         "tag_prefix": "agent-v",
         "asset_template": "karn-agent-v{version}.tar.gz",
         "version_file": "agent-version.txt",
         "label": "Agent",
+        "install_dir": AGENT_DIR,
     },
 }
 
@@ -134,7 +140,7 @@ def _extract(archive: Path, dest_dir: Path) -> None:
 
 def _get_local_version(component: str) -> Optional[str]:
     cfg = _COMPONENT_CONFIG[component]
-    version_path = DB_DIR / cfg["version_file"]
+    version_path = cfg["install_dir"] / cfg["version_file"]
     try:
         text = version_path.read_text().strip()
         return text or None
@@ -143,9 +149,10 @@ def _get_local_version(component: str) -> Optional[str]:
 
 
 def _set_local_version(component: str, version: str) -> None:
-    DB_DIR.mkdir(parents=True, exist_ok=True)
     cfg = _COMPONENT_CONFIG[component]
-    (DB_DIR / cfg["version_file"]).write_text(version)
+    install_dir: Path = cfg["install_dir"]
+    install_dir.mkdir(parents=True, exist_ok=True)
+    (install_dir / cfg["version_file"]).write_text(version)
 
 
 def _is_newer(remote: str, local: Optional[str]) -> bool:
@@ -154,8 +161,8 @@ def _is_newer(remote: str, local: Optional[str]) -> bool:
         return True
     try:
         r = tuple(int(x) for x in remote.split("."))
-        l = tuple(int(x) for x in local.split("."))
-        return r > l
+        loc = tuple(int(x) for x in local.split("."))
+        return r > loc
     except ValueError:
         return remote != local
 
@@ -201,11 +208,12 @@ def install_component(
     url, size = _find_asset(release, asset_name)
     print(f"  Asset: {asset_name} ({size / 1024 / 1024:.1f} MB)")
 
+    install_dir: Path = cfg["install_dir"]
     with tempfile.TemporaryDirectory() as tmp:
         archive = Path(tmp) / asset_name
         _download_with_progress(url, archive, size)
-        print(f"  Extracting to {DB_DIR} ...")
-        _extract(archive, DB_DIR)
+        print(f"  Extracting to {install_dir} ...")
+        _extract(archive, install_dir)
 
     _set_local_version(component, remote_version)
     print(f"  {label} v{remote_version} installed.")
@@ -279,10 +287,11 @@ async def install_component_async(
         asset_name = cfg["asset_template"].format(version=remote_version)
         url, size = _find_asset_safe(release, asset_name)
 
+        install_dir: Path = cfg["install_dir"]
         with tempfile.TemporaryDirectory() as tmp:
             archive = Path(tmp) / asset_name
             await _download_async(url, archive, size, on_progress)
-            await asyncio.to_thread(_extract, archive, DB_DIR)
+            await asyncio.to_thread(_extract, archive, install_dir)
 
         await asyncio.to_thread(_set_local_version, component, remote_version)
         return {"installed": True, "version": remote_version, "error": None}

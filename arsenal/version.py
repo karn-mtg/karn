@@ -1,12 +1,18 @@
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
-_DB_VERSION_FILES = {
-    "cards": "cards-db-version.txt",
-    "rules": "rules-db-version.txt",
-    "agent": "agent-version.txt",
+_AGENT_DIR = Path(
+    os.environ.get("KARN_AGENT_DIR") or Path.home() / "karnData" / "arsenal" / "agent"
+).expanduser()
+
+# Maps component → (base_dir, version_file). agent uses its own dir.
+_DB_VERSION_FILES: dict[str, tuple[Path | None, str]] = {
+    "cards": (None, "cards-db-version.txt"),   # None → resolved from BASE_DIR at call time
+    "rules": (None, "rules-db-version.txt"),
+    "agent": (_AGENT_DIR, "agent-version.txt"),
 }
 
 
@@ -47,12 +53,15 @@ def get_version() -> str:
 
 
 def get_db_version(component: str) -> str | None:
-    filename = _DB_VERSION_FILES.get(component)
-    if not filename:
+    entry = _DB_VERSION_FILES.get(component)
+    if not entry:
         return None
+    base_dir, filename = entry
     try:
-        from arsenal.cards.config import BASE_DIR
-        text = (BASE_DIR / filename).read_text(encoding="utf-8").strip()
+        if base_dir is None:
+            from arsenal.cards.config import BASE_DIR
+            base_dir = BASE_DIR
+        text = (base_dir / filename).read_text(encoding="utf-8").strip()
         return text or None
     except Exception:
         return None

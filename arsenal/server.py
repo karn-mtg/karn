@@ -388,26 +388,50 @@ def get_health() -> dict:
 
 @mcp.tool()
 def check_updates() -> dict:
-    """Check GitHub for available updates to each database component."""
+    """Check GitHub for available updates to all components including the server binary."""
     from scripts.install_data import check_db_versions
+    from scripts.self_update import check_server_version
     try:
         components = check_db_versions()
     except Exception as exc:
         components = {"error": str(exc)}
-    return {"binary_version": get_version(), "components": components}
+    try:
+        server = check_server_version()
+    except Exception as exc:
+        server = {"error": str(exc)}
+    return {"binary_version": get_version(), "server": server, "components": components}
 
 
 @mcp.tool()
 async def update_component(component: str, ctx: Context) -> dict:
     """
-    Download and install the latest version of a DB component.
-    component must be 'cards' or 'rules'.
+    Download and install the latest version of a component.
+    component must be 'cards', 'rules', 'agent', or 'server'.
     Reports download progress via MCP progress notifications.
+    When component is 'server', the process restarts automatically after the update.
     """
-    from scripts.install_data import install_component_async
+    if component not in ("cards", "rules", "agent", "server"):
+        return {"success": False, "error": f"Unknown component {component!r}. Must be 'cards', 'rules', 'agent', or 'server'."}
 
-    if component not in ("cards", "rules", "agent"):
-        return {"success": False, "error": f"Unknown component {component!r}. Must be 'cards', 'rules', or 'agent'."}
+    if component == "server":
+        from scripts.self_update import self_update_server_async
+
+        async def _on_progress(downloaded: int, total: int) -> None:
+            try:
+                await ctx.report_progress(downloaded, total)
+            except Exception:
+                pass
+
+        result = await self_update_server_async(on_progress=_on_progress)
+        return {
+            "success": result["installed"],
+            "version": result["version"],
+            "error": result.get("error"),
+            "component": component,
+            "restarting": result.get("restarting", False),
+        }
+
+    from scripts.install_data import install_component_async
 
     async def _on_progress(downloaded: int, total: int) -> None:
         try:

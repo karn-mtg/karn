@@ -84,17 +84,57 @@ def version():
 @app.get("/updates")
 async def check_for_updates():
     from scripts.install_data import check_db_versions
+    from scripts.self_update import check_server_version
     try:
-        result = await asyncio.to_thread(check_db_versions)
-        return result
+        components = await asyncio.to_thread(check_db_versions)
+        server = await asyncio.to_thread(check_server_version)
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"Failed to check updates: {exc}")
+    return {"server": server, **components}
 
 
 @app.get("/update/{component}")
 async def update_component(component: str):
-    if component not in ("cards", "rules", "agent"):
-        raise HTTPException(status_code=422, detail=f"Unknown component {component!r}. Must be 'cards', 'rules', or 'agent'.")
+    if component not in ("cards", "rules", "agent", "server"):
+        raise HTTPException(status_code=422, detail=f"Unknown component {component!r}. Must be 'cards', 'rules', 'agent', or 'server'.")
+
+    if component == "server":
+        from scripts.self_update import self_update_server_async
+
+        async def server_stream():
+            queue: asyncio.Queue[str | None] = asyncio.Queue()
+
+            async def on_progress(downloaded: int, total: int) -> None:
+                pct = round(downloaded / total * 100, 1) if total > 0 else 0
+                await queue.put(
+                    f'data: {json.dumps({"type":"progress","downloaded":downloaded,"total":total,"pct":pct})}\n\n'
+                )
+
+            async def run_update() -> dict:
+                result = await self_update_server_async(on_progress=on_progress)
+                await queue.put(None)
+                return result
+
+            update_task = asyncio.create_task(run_update())
+
+            while True:
+                item = await queue.get()
+                if item is None:
+                    break
+                yield item
+
+            result = await update_task
+
+            if result.get("error"):
+                yield f'data: {json.dumps({"type":"error","message":result["error"]})}\n\n'
+            else:
+                yield f'data: {json.dumps({"type":"done","version":result["version"],"installed":result["installed"],"restarting":result.get("restarting",False)})}\n\n'
+
+        return StreamingResponse(
+            server_stream(),
+            media_type="text/event-stream",
+            headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+        )
 
     from scripts.install_data import install_component_async
 
