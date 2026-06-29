@@ -1,11 +1,11 @@
 # arsenal/server.py
 from __future__ import annotations
 
-import json
 import os
 import re
 import sys
 import time
+import threading as _threading
 from pathlib import Path
 
 from mcp.server.fastmcp import FastMCP
@@ -31,8 +31,6 @@ _START_TIME = time.time()
 # ---------------------------------------------------------------------------
 # Rules lazy state
 # ---------------------------------------------------------------------------
-
-import threading as _threading
 
 _rules: dict | None = None
 _glossary: dict | None = None

@@ -3,6 +3,11 @@ name: Release Cards DB
 on:
   push:
     tags: ['cards-db-v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag to upload assets to (e.g. cards-db-v1.1.0)'
+        required: true
 
 jobs:
   build:
@@ -29,7 +34,8 @@ jobs:
       - name: Package cards DB
         shell: bash
         run: |
-          version="${GITHUB_REF_NAME#cards-db-v}"
+          ref="${{ inputs.tag || github.ref_name }}"
+          version="${ref#cards-db-v}"
           asset="karn-cards-db-v${version}.tar.gz"
           echo "Packaging ${asset}..."
           tar -czf "${asset}" \
@@ -43,5 +49,6 @@ jobs:
 
       - uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ inputs.tag || github.ref_name }}
           files: ${{ env.ASSET_NAME }}
           generate_release_notes: false

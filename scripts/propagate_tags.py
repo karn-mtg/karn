@@ -184,7 +184,7 @@ def propagate(min_tag_votes: int, min_cluster_votes: int, dry_run: bool) -> None
     # Summary
     total_new_tags     = sum(len(_parse_csv(updates[c].get("scryfall_tags")) - _parse_csv(all_meta.get(c, {}).get("scryfall_tags"))) for c in updates)
     total_new_clusters = sum(len(v) for v in cluster_backfill.values())
-    print(f"\nPropagation complete:")
+    print("\nPropagation complete:")
     print(f"  Cards updated:        {len(updates):,}")
     print(f"  New tag assignments:  {total_new_tags:,}")
     print(f"  New cluster assigns:  {total_new_clusters:,}")

@@ -31,7 +31,7 @@ jobs:
           python-version: "3.11"
 
       - name: Install dependencies
-        run: pip install -e .
+        run: pip install -e . pyinstaller
 
       - name: Stamp version
         shell: bash
@@ -45,7 +45,7 @@ jobs:
         shell: pwsh
         run: |
           $version = "${{ github.ref_name }}" -replace '^server-v', ''
-          Compress-Archive dist\karn.exe "karn-arsenal-v${version}-windows.zip"
+          Compress-Archive dist\karn.exe "karn-arsenal-v${version}-win.zip"
 
       - name: Package release (Linux/Mac)
         if: matrix.os != 'windows-latest'

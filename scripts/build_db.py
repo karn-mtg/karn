@@ -36,7 +36,6 @@ def build_similarity_edges(
     cards: list[dict],
     embeddings,  # np.ndarray shape [len(cards), dim] — pre-computed in step 6
 ) -> list[tuple[str, str, float]]:
-    import numpy as np
     from arsenal.cards.embedder import get_collection_for_query
 
     # Use get_collection_for_query (no EF) since we're passing pre-computed embeddings
