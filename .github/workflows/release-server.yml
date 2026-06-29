@@ -31,7 +31,9 @@ jobs:
           python-version: "3.11"
 
       - name: Install dependencies
-        run: pip install -e . pyinstaller
+        run: |
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+          pip install -e . pyinstaller
 
       - name: Stamp version
         shell: bash
