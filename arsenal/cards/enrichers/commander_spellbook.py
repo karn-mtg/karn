@@ -19,7 +19,8 @@ from arsenal.cards.graph_builder import load_graph, save_graph
 
 API_BASE = "https://backend.commanderspellbook.com/variants/"
 OUTPUT_JSON = BASE_DIR / "combos_spellbook.json"
-REQUEST_DELAY = 0.15  # seconds between paginated requests
+REQUEST_DELAY = 0.5   # seconds between paginated requests
+MAX_RETRIES   = 5     # retries on 429 / transient errors
 
 
 def _fetch_all_variants() -> list[dict]:
@@ -30,10 +31,19 @@ def _fetch_all_variants() -> list[dict]:
 
     with httpx.Client(timeout=30, headers={"User-Agent": "karn-mtg-enricher/1.0"}) as client:
         while url:
-            resp = client.get(url)
-            resp.raise_for_status()
-            data = resp.json()
+            for attempt in range(MAX_RETRIES):
+                resp = client.get(url)
+                if resp.status_code == 429:
+                    wait = 2 ** attempt * 5  # 5s, 10s, 20s, 40s, 80s
+                    print(f"\r  Rate limited — waiting {wait}s (attempt {attempt + 1}/{MAX_RETRIES})", flush=True)
+                    time.sleep(wait)
+                    continue
+                resp.raise_for_status()
+                break
+            else:
+                raise RuntimeError(f"Failed to fetch {url} after {MAX_RETRIES} retries (429)")
 
+            data = resp.json()
             batch = data.get("results", [])
             variants.extend(batch)
             page += 1
