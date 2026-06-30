@@ -30,7 +30,7 @@ jobs:
       - name: Build card database
         env:
           KARN_DATA_DIR: ${{ github.workspace }}/db
-        run: python scripts/build_db.py
+        run: python scripts/build_db.py --no-spellbook
         timeout-minutes: 60
 
       - name: Package cards DB
