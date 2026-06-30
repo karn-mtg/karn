@@ -2,12 +2,14 @@ name: Release Cards DB
 
 on:
   push:
-    tags: ['cards-db-v*']
+    tags:
+      - 'cards-db-v*'
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Release tag to upload assets to (e.g. cards-db-v1.1.0)'
+        description: 'Release tag (e.g. cards-db-v1.1.0)'
         required: true
+        type: string
 
 jobs:
   build:
@@ -32,20 +34,14 @@ jobs:
         timeout-minutes: 60
 
       - name: Package cards DB
-        shell: bash
+        env:
+          DB_DIR: ${{ github.workspace }}/db
+          REF_NAME: ${{ inputs.tag || github.ref_name }}
         run: |
-          ref="${{ inputs.tag || github.ref_name }}"
-          version="${ref#cards-db-v}"
+          version="${REF_NAME#cards-db-v}"
           asset="karn-cards-db-v${version}.tar.gz"
-          echo "Packaging ${asset}..."
-          tar -czf "${asset}" \
-            -C "${{ github.workspace }}/db" \
-            chroma_db graph.json prints.db
+          tar -czf "${asset}" -C "${DB_DIR}" chroma_db graph.json prints.db
           echo "ASSET_NAME=${asset}" >> "$GITHUB_ENV"
-          echo "SIZE=$(du -sh ${asset} | cut -f1)" >> "$GITHUB_ENV"
-
-      - name: Log size
-        run: echo "Package size: ${{ env.SIZE }}"
 
       - uses: softprops/action-gh-release@v2
         with:
