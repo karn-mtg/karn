@@ -17,7 +17,7 @@ from arsenal.cards.config import BASE_DIR, CHROMA_DIR, GRAPH_JSON_PATH
 from arsenal.cards.embedder import get_or_create_collection
 from arsenal.cards.graph_builder import load_graph, save_graph
 
-API_BASE = "https://backend.commanderspellbook.com/api/v2/variants/"
+API_BASE = "https://backend.commanderspellbook.com/variants/"
 OUTPUT_JSON = BASE_DIR / "combos_spellbook.json"
 REQUEST_DELAY = 0.15  # seconds between paginated requests
 
