@@ -267,8 +267,14 @@ def run(force: bool = False) -> None:
         tags_map: dict[str, list[str]] = json.loads(OUTPUT_JSON.read_text(encoding="utf-8"))
         print(f"  Loaded tags for {len(tags_map):,} cards from cache")
     else:
-        all_results = collection.get(include=["metadatas"])
-        ids = all_results["ids"]
+        ids: list[str] = []
+        offset, batch_size = 0, 5000
+        while True:
+            batch = collection.get(include=[], limit=batch_size, offset=offset)
+            if not batch["ids"]:
+                break
+            ids.extend(batch["ids"])
+            offset += batch_size
 
         print(f"  Fetching Scryfall Tagger tags for {len(ids):,} cards "
               f"({CONCURRENCY} concurrent, {REQUEST_DELAY}s delay)...")

@@ -150,9 +150,16 @@ def run(force: bool = False) -> None:
         edhrec_map: dict[str, dict] = json.loads(OUTPUT_JSON.read_text(encoding="utf-8"))
         print(f"  Loaded EDHREC data for {len(edhrec_map):,} cards from cache")
     else:
-        all_results = collection.get(include=["metadatas"])
-        ids       = all_results["ids"]
-        metadatas = all_results["metadatas"]
+        ids: list[str] = []
+        metadatas: list[dict] = []
+        offset, batch_size = 0, 5000
+        while True:
+            batch = collection.get(include=["metadatas"], limit=batch_size, offset=offset)
+            if not batch["ids"]:
+                break
+            ids.extend(batch["ids"])
+            metadatas.extend(batch["metadatas"])
+            offset += batch_size
 
         print(f"  Fetching EDHREC data for {len(ids):,} cards "
               f"({CONCURRENCY} concurrent, {REQUEST_DELAY}s delay)...")

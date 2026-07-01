@@ -149,9 +149,16 @@ def update_chroma_combos(combos: list[dict]) -> None:
     # Build mapping: card_name -> list of combo IDs
     # ChromaDB has no name index; we fetch all docs and build a name->id map.
     print("  Building card-name index from ChromaDB...")
-    all_results = collection.get(include=["metadatas"])
-    ids = all_results["ids"]
-    metadatas = all_results["metadatas"]
+    ids: list[str] = []
+    metadatas: list[dict] = []
+    offset, batch_size = 0, 5000
+    while True:
+        batch = collection.get(include=["metadatas"], limit=batch_size, offset=offset)
+        if not batch["ids"]:
+            break
+        ids.extend(batch["ids"])
+        metadatas.extend(batch["metadatas"])
+        offset += batch_size
 
     name_to_id: dict[str, str] = {}
     id_to_meta: dict[str, dict] = {}
